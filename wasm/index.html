@@ -58,7 +58,7 @@
         lynx.FS.writeFile("/input.html", document.getElementById("html").value);
         const result = lynx.callMain([
           "-cfg=/etc/lynx.cfg", "-lss=/dev/null", "-restrictions=all",
-          "-dump", "-display_charset=utf-8", "file:///input.html"
+          "-dump", "-assume_local_charset=utf-8", "-display_charset=utf-8", "file:///input.html"
         ]);
         status.textContent = result === 0 ? "Done." : `Lynx exited with status ${result}.`;
       } catch (error) {
