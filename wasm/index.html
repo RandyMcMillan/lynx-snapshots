@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Lynx WebAssembly</title>
+  <style>
+    body { max-width: 60rem; margin: 2rem auto; padding: 0 1rem; font-family: sans-serif; }
+    textarea { box-sizing: border-box; width: 100%; min-height: 12rem; }
+    pre { white-space: pre-wrap; overflow-wrap: anywhere; background: #eee; color: #111; padding: 1rem; }
+    button { margin: 1rem 0; }
+  </style>
+</head>
+<body>
+  <h1>Lynx WebAssembly</h1>
+  <p>Render local HTML with Lynx's <code>-dump</code> mode, entirely in your browser.
+    This demo does not provide an interactive terminal or remote browsing:
+    browsers cannot use Lynx's native TCP sockets.</p>
+  <label for="html">HTML source</label>
+  <textarea id="html" spellcheck="false"><html><head><title>Lynx WASM demo</title></head><body><h1>Hello from Lynx!</h1><p>This HTML is rendered by the WebAssembly build of Lynx.</p><p><a href="https://lynx.invisible-island.net/">Lynx homepage</a></p></body></html></textarea>
+  <button id="render" disabled>Render HTML</button>
+  <p id="status" role="status">Loading WebAssembly…</p>
+  <pre id="output" aria-label="Lynx output"></pre>
+  <p><a href="lynx.js">JavaScript runtime</a> · <a href="lynx.wasm">WebAssembly binary</a> ·
+    <a href="https://github.com/RandyMcMillan/lynx-snapshots">Source code</a> ·
+    <a href="COPYING">License</a> · <a href="COPYHEADER">Copyright</a></p>
+  <script src="lynx.js"></script>
+  <script>
+    const render = document.getElementById("render");
+    const status = document.getElementById("status");
+    const output = document.getElementById("output");
+    let wasmBinary;
+
+    // Fetch relative to this page so repository Pages URLs work without a custom domain.
+    fetch("lynx.wasm").then(response => {
+      if (!response.ok) throw new Error(`WebAssembly download failed: ${response.status}`);
+      return response.arrayBuffer();
+    }).then(bytes => {
+      wasmBinary = bytes;
+      render.disabled = false;
+      status.textContent = "Ready.";
+    }).catch(error => {
+      status.textContent = error.message;
+    });
+
+    render.addEventListener("click", async () => {
+      render.disabled = true;
+      output.textContent = "";
+      status.textContent = "Rendering…";
+      try {
+        // A fresh instance isolates filesystem and global C state after main exits.
+        const lynx = await createLynx({
+          wasmBinary,
+          noInitialRun: true,
+          print: line => { output.textContent += line + "\n"; },
+          printErr: line => { output.textContent += line + "\n"; }
+        });
+        lynx.FS.writeFile("/input.html", document.getElementById("html").value);
+        const result = lynx.callMain([
+          "-cfg=/etc/lynx.cfg", "-lss=/dev/null", "-restrictions=all",
+          "-dump", "-display_charset=utf-8", "file:///input.html"
+        ]);
+        status.textContent = result === 0 ? "Done." : `Lynx exited with status ${result}.`;
+      } catch (error) {
+        status.textContent = `Rendering failed: ${error.message}`;
+      } finally {
+        render.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>

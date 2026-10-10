@@ -76,6 +76,33 @@ INSTALLING LYNX
 
 DOCUMENTATION
 
+WEBASSEMBLY AND GITHUB PAGES
+
+   The "WebAssembly and GitHub Pages" workflow builds Lynx with Emscripten
+   and a checksum-verified static ncurses library.  Pull requests and pushes
+   run the build and a Node.js rendering smoke test.  Only the default branch
+   deploys to Pages.  In Settings > Pages, select "GitHub Actions" as the
+   build and deployment source before the first deployment.
+
+   To build locally on Ubuntu 22.04, install emscripten, build-essential and curl,
+   then run "make -f wasm/Makefile" and "make -f wasm/Makefile check".
+   The generated site is in build-wasm/site.  Serve that directory over HTTP
+   (for example, "python3 -m http.server --directory build-wasm/site").
+   Open http://localhost:8000 rather than opening index.html as a local file.
+   Build output is separate from native builds; BUILD_DIR can override its
+   location.  Internet access is required to download the ncurses sources.
+
+   The page renders pasted HTML with Lynx's -dump mode.  It does not emulate
+   a terminal or support remote browsing, TLS, or native socket protocols.
+   HTML is held in the instance's in-memory filesystem and output is shown
+   as text; input scripts are not executed.  A new instance is used for each
+   render.  The JavaScript runtime, WASM binary, license and source link are
+   available on the page.
+
+   "act -v" can run the build locally with an Ubuntu runner image supporting
+   sudo/apt; Pages setup, artifact upload and deployment are skipped when
+   act sets ACT.  Actual Pages deployment requires GitHub's Pages/OIDC APIs.
+
    A users guide is included in this distribution along with a man page
    for Unix systems and a help file for VMS systems.  All documentation is
    contained in the top directory and the docs, samples and lynx_help
